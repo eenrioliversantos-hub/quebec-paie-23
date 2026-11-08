@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix PAYMENTNETS 23",
+  "description": "Robust, scalable salary management system with JWT authentication, PostgreSQL integration, Docker support, and centralized ELK stack logging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
