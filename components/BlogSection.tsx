@@ -7,6 +7,7 @@ import { NewsletterBox } from '@/components/NewsletterBox';
 import { adminStore, BlogArticleData } from '@/lib/admin-store';
 import { TrustAuthorityBar } from '@/components/TrustAuthorityBar';
 import { normalizeUrl } from '@/lib/utils';
+import { BlogArticleInPageEditor } from '@/components/BlogArticleInPageEditor';
 import {
   BookOpen,
   Sparkles,
@@ -47,9 +48,46 @@ import {
   HelpCircle,
   Percent,
   Filter,
+  Edit3,
+  Plus,
+  FilePlus,
+  Link as LinkIcon,
 } from 'lucide-react';
 
 export type Article = BlogArticleData;
+
+export interface ExtractedArticleLink {
+  text: string;
+  url: string;
+  isInternalTool: boolean;
+  toolId?: ToolId;
+}
+
+export function extractLinksFromArticleContent(paragraphs: string[]): ExtractedArticleLink[] {
+  const links: ExtractedArticleLink[] = [];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const seen = new Set<string>();
+
+  for (const p of paragraphs || []) {
+    let match;
+    while ((match = linkRegex.exec(p)) !== null) {
+      const text = match[1];
+      const url = match[2];
+      const key = `${text}|${url}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const isInternalTool = url.startsWith('#');
+        links.push({
+          text,
+          url,
+          isInternalTool,
+          toolId: isInternalTool ? (url.replace('#', '') as ToolId) : undefined,
+        });
+      }
+    }
+  }
+  return links;
+}
 
 export interface CategoryHubItem {
   id: string;
@@ -251,6 +289,8 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
   const [prevInitialId, setPrevInitialId] = useState<string | null | undefined>(initialArticleId);
   const [prevActiveCategory, setPrevActiveCategory] = useState<string | undefined>(activeCategory);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isEditingInPage, setIsEditingInPage] = useState<boolean>(false);
+  const [showDrafts, setShowDrafts] = useState<boolean>(true);
 
   // Sync incoming category from Header navigation
   if (activeCategory !== undefined && activeCategory !== prevActiveCategory) {
@@ -267,10 +307,12 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
   if (initialArticleId !== prevInitialId) {
     setPrevInitialId(initialArticleId);
     setActiveArticleId(initialArticleId || null);
+    setIsEditingInPage(false);
   }
 
   const handleOpenArticle = (art: BlogArticleData) => {
     setActiveArticleId(art.id);
+    setIsEditingInPage(false);
     adminStore.logEvent({
       type: 'article_view',
       summary: `Leitura do artigo: ${art.title[lang] || art.title.pt}`,
@@ -286,6 +328,130 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
     }
+  };
+
+  const handleCreateNewArticleInBlog = () => {
+    const newId = `art-${Date.now()}`;
+    const newArt: BlogArticleData = {
+      id: newId,
+      slug: `artigo-${Date.now()}`,
+      category: 'calculos-manuais',
+      readTime: '5 min',
+      date: 'Édition 2026',
+      published: false, // Inicia como rascunho seguro
+      viewsCount: 0,
+      title: {
+        pt: 'Novo Artigo do Blog (Edição em Tempo Real)',
+        fr: 'Nouvel article du blog (Édition en direct)',
+        en: 'New Blog Post (Live In-Page Editor)',
+      },
+      excerpt: {
+        pt: 'Escreva um resumo conciso de 2 a 3 linhas sobre as regras, barèmes ou dicas práticas apresentadas neste guia...',
+        fr: 'Rédigez un sommaire clair et percutant présentant l’essentiel de votre article...',
+        en: 'Write a compelling executive summary outlining the core takeaways of this guide...',
+      },
+      content: {
+        pt: [
+          'Este é o primeiro parágrafo do seu novo artigo. Você pode editá-lo diretamente aqui na página!',
+          'Para criar links internos para as ferramentas do site, use a sintaxe [Calculador de Salário Líquido](#net-calc) ou [Horas Extras CNESST](#overtime).',
+          'Para links externos, use o formato padrão [Revenu Québec](https://www.revenuquebec.ca). Todos os links citados também serão agrupados automaticamente no Índice de Recursos no final deste post!',
+        ],
+        fr: [
+          'Voici le premier paragraphe de votre nouvel article. Vous pouvez le modifier en direct sur cette page !',
+          'Pour insérer un lien vers un outil, utilisez [Calculateur de Salaire Net](#net-calc).',
+        ],
+        en: [
+          'This is the opening paragraph of your new guide. You can edit it right here on the page!',
+          'To link internal tools, use [Net Salary Calculator](#net-calc).',
+        ],
+      },
+      ctaTool: 'net-calc',
+      ctaToolLabel: {
+        pt: 'Ver na Calculadora',
+        fr: 'Calculer mon salaire au Québec',
+        en: 'Test in Quebec Net Calculator',
+      },
+      ctaHeadline: {
+        pt: '⚡ Ferramenta Prática Recomendada para este Caso:',
+        fr: '⚡ Outil pratique recommandé pour ce sujet :',
+        en: '⚡ Recommended Practical Tool for this Need:',
+      },
+      ctaButtonText: {
+        pt: 'Abrir Ferramenta Grátis',
+        fr: 'Lancer l’outil gratuit',
+        en: 'Open Free Tool',
+      },
+      auditBadge: {
+        pt: 'Revisão Contábil 2026',
+        fr: 'Révision Comptable 2026',
+        en: 'CPA Reviewed 2026',
+      },
+      targetAudienceLabel: {
+        pt: 'Consumidores B2C',
+        fr: 'Consommateurs B2C',
+        en: 'B2C Consumers',
+      },
+      communicationTone: {
+        pt: 'Didático, Acolhedor & Prático',
+        fr: 'Didactique, Chaleureux & Pratique',
+        en: 'Actionable & Warm',
+      },
+      funnelStage: 'topo',
+      funnelStageLabel: {
+        pt: 'Topo de Funil (Educação & Atração)',
+        fr: 'Haut d’Entonnoir (Éducation)',
+        en: 'Top of Funnel (Education)',
+      },
+      author: {
+        initials: 'JP',
+        name: 'Jean-Philippe Beaulieu, CPA auditeur',
+        role: 'Pôle d’Expertise Comptable & Fiscale PaieNet.qc · Membre de l’Ordre des CPA',
+        complianceSeal: 'Conforme aux barèmes ARC & Revenu Québec 2026',
+      },
+      toolsStripTitle: {
+        pt: '⚡ Ferramentas Oficiais Recomendadas no PaieNet:',
+        fr: '⚡ Outils Officiels Recommandés :',
+        en: '⚡ Recommended Official Tools:',
+      },
+      recommendedTools: [
+        { toolId: 'net-calc', title: 'Salário Líquido', subtitle: 'Cálculo oficial' },
+        { toolId: 'overtime', title: 'Horas Extras', subtitle: '1.5× CNESST' },
+        { toolId: 'canada-provinces', title: '13 Províncias', subtitle: 'Comparativo' },
+        { toolId: 'resume-builder', title: 'Gerador de CV', subtitle: 'ATS Canadá' },
+      ],
+      keyTakeaways: {
+        pt: [
+          'Ponto prático 1 sobre finanças ou normas do trabalho no Québec.',
+          'Ponto prático 2 com regra de retenção oficial ou cálculo.',
+          'Consulte as ferramentas interativas no índice ao final do artigo.',
+        ],
+        fr: [
+          'Point clé 1 sur la fiscalité ou les normes québécoises.',
+          'Point clé 2 avec formule pratique.',
+        ],
+        en: [
+          'Key takeaway 1 regarding Quebec payroll or tax rules.',
+          'Key takeaway 2 with step-by-step guidance.',
+        ],
+      },
+      officialSources: [
+        {
+          title: 'Guide des retenues à la source (TP-1015.G)',
+          url: 'https://www.revenuquebec.ca',
+          authority: 'Revenu Québec',
+        },
+      ],
+    };
+
+    adminStore.saveArticle(newArt);
+    setActiveArticleId(newId);
+    setIsEditingInPage(true);
+    window.scrollTo({ top: 80, behavior: 'smooth' });
+  };
+
+  const handleSaveInPageArticle = (updated: BlogArticleData) => {
+    adminStore.saveArticle(updated);
+    setIsEditingInPage(false);
   };
 
   const categories = [
@@ -315,20 +481,30 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
   const filteredArticles = useMemo(() => {
     return articles.filter((a) => {
-      if (a.published === false) return false;
+      // Allow viewing unpublished drafts when showDrafts is true or when searching
+      if (a.published === false && !showDrafts && !searchQuery.trim()) return false;
       const matchesCategory = selectedCategory === 'all' || a.category === selectedCategory;
       const matchesAudience = selectedAudience === 'all' || a.targetAudienceType === selectedAudience;
       const q = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        !q ||
-        (a.title[lang] || a.title.pt || '').toLowerCase().includes(q) ||
-        (a.excerpt[lang] || a.excerpt.pt || '').toLowerCase().includes(q) ||
-        (a.targetKeyword || '').toLowerCase().includes(q);
+      const title = (a.title?.[lang] || a.title?.pt || a.title?.fr || a.title?.en || '').toLowerCase();
+      const excerpt = (a.excerpt?.[lang] || a.excerpt?.pt || a.excerpt?.fr || a.excerpt?.en || '').toLowerCase();
+      const keyword = (a.targetKeyword || '').toLowerCase();
+      const matchesSearch = !q || title.includes(q) || excerpt.includes(q) || keyword.includes(q);
       return matchesCategory && matchesAudience && matchesSearch;
     });
-  }, [articles, selectedCategory, selectedAudience, searchQuery, lang]);
+  }, [articles, selectedCategory, selectedAudience, searchQuery, lang, showDrafts]);
+
+  const draftsCount = useMemo(() => {
+    return articles.filter((a) => a.published === false).length;
+  }, [articles]);
 
   const activeArticle = articles.find((a) => a.id === activeArticleId);
+
+  const extractedLinks = useMemo(() => {
+    if (!activeArticle) return [];
+    const paras = activeArticle.content?.[lang] || activeArticle.content?.pt || activeArticle.content?.fr || [];
+    return extractLinksFromArticleContent(paras);
+  }, [activeArticle, lang]);
 
   // Related articles resolved dynamically from relatedArticleIds or fallback to same category
   const relatedArticles = useMemo(() => {
@@ -449,12 +625,20 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/10 pointer-events-none" />
 
         {/* Floating Metadata Overlay */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-[11px] pointer-events-none">
-          <span className="font-extrabold uppercase tracking-wider text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-xs flex items-center gap-1.5">
-            <Calculator className="w-3.5 h-3.5 text-blue-400" />
-            <span>{categories.find((c) => c.id === art.category)?.label || 'Dossiê Fiscal'}</span>
-          </span>
-          <span className="text-[10px] font-bold text-slate-300 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">
+        <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-[11px] pointer-events-none gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-extrabold uppercase tracking-wider text-white bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-xs flex items-center gap-1.5">
+              <Calculator className="w-3.5 h-3.5 text-blue-400" />
+              <span>{categories.find((c) => c.id === art.category)?.label || 'Dossiê Fiscal'}</span>
+            </span>
+            {art.published === false && (
+              <span className="font-bold text-amber-950 bg-amber-400 px-2 py-0.5 rounded-md shadow-xs flex items-center gap-1 text-[10px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-950 animate-ping" />
+                <span>Rascunho</span>
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-bold text-slate-300 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded border border-white/10 shrink-0">
             {art.readTime}
           </span>
         </div>
@@ -475,53 +659,173 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
     );
   };
 
-  // Enhanced Paragraph Renderer with Bullet Support and Internal Link Buttons
-  const renderParagraphWithLinks = (text: string) => {
-    const isBullet = text.startsWith('•') || text.startsWith('-');
-    const cleanText = isBullet ? text.replace(/^[•-]\s*/, '') : text;
+  // Helper to format bold **text** and italic *text* within string fragments
+  const formatTextTokens = (rawText: string) => {
+    // If no bold markup, return text as is
+    if (!rawText.includes('**') && !rawText.includes('*')) {
+      return rawText;
+    }
+    // Match **bold** first
+    const boldParts = rawText.split(/(\*\*[^*]+\*\*)/g);
+    return boldParts.map((bPart, bIdx) => {
+      if (bPart.startsWith('**') && bPart.endsWith('**')) {
+        return (
+          <strong key={`b-${bIdx}`} className="font-extrabold text-slate-900">
+            {bPart.slice(2, -2)}
+          </strong>
+        );
+      }
+      return bPart;
+    });
+  };
 
-    const linkRegex = /\[([^\]]+)\]\(#([^)]+)\)/g;
-    const parts = [];
+  // Enhanced Paragraph Renderer with WordPress-style block support (H2, H3, Bullets, Dicas, Alertas)
+  // and color-differentiated pills for internal tools (Blue) vs external links (Emerald).
+  const renderParagraphWithLinks = (text: string) => {
+    // Check block prefixes
+    const isH2 = text.startsWith('## ');
+    const isH3 = text.startsWith('### ');
+    const isTip = text.startsWith('> 💡') || text.startsWith('> [DICA]');
+    const isAlert = text.startsWith('> ⚠️') || text.startsWith('> [ATENÇÃO]') || text.startsWith('> [ALERTA]');
+    const isInfo = text.startsWith('> ℹ️') || text.startsWith('> [INFO]') || (text.startsWith('> ') && !isTip && !isAlert);
+    const isBullet = text.startsWith('•') || text.startsWith('- ');
+
+    let cleanText = text;
+    if (isH2) cleanText = text.replace(/^##\s*/, '');
+    else if (isH3) cleanText = text.replace(/^###\s*/, '');
+    else if (isTip) cleanText = text.replace(/^>\s*(💡|\[DICA\])\s*/i, '');
+    else if (isAlert) cleanText = text.replace(/^>\s*(⚠️|\[ATENÇÃO\]|\[ALERTA\])\s*/i, '');
+    else if (isInfo) cleanText = text.replace(/^>\s*(ℹ️|\[INFO\])?\s*/i, '');
+    else if (isBullet) cleanText = text.replace(/^[•-]\s*/, '');
+
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts: (string | React.ReactNode)[] = [];
     let lastIndex = 0;
     let match;
 
     while ((match = linkRegex.exec(cleanText)) !== null) {
       const matchIndex = match.index;
       if (matchIndex > lastIndex) {
-        parts.push(cleanText.substring(lastIndex, matchIndex));
+        parts.push(formatTextTokens(cleanText.substring(lastIndex, matchIndex)));
       }
 
       const linkText = match[1];
-      const targetHash = match[2] as ToolId;
+      const href = match[2];
 
-      parts.push(
-        <button
-          key={`link-${matchIndex}`}
-          type="button"
-          onClick={() => {
-            onSelectTool(targetHash);
-            window.scrollTo({ top: 120, behavior: 'smooth' });
-          }}
-          className="text-blue-600 hover:text-blue-800 font-extrabold underline cursor-pointer inline bg-transparent p-0 m-0 border-none align-baseline text-xs sm:text-sm transition-colors"
-        >
-          {linkText}
-        </button>
-      );
+      if (href.startsWith('#')) {
+        const targetHash = href.replace('#', '') as ToolId;
+        // Distinct BLUE / INDIGO interactive pill for internal portal tools
+        parts.push(
+          <button
+            key={`tool-link-${matchIndex}`}
+            type="button"
+            onClick={() => {
+              onSelectTool(targetHash);
+              window.scrollTo({ top: 120, behavior: 'smooth' });
+            }}
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 mx-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-900 border border-blue-300 font-extrabold text-xs sm:text-[13px] shadow-2xs hover:shadow-xs hover:scale-102 transition-all cursor-pointer align-baseline"
+            title="Abrir ferramenta integrada no PaieNet.qc"
+          >
+            <Sparkles className="w-3 h-3 text-blue-600 shrink-0" />
+            <span>{linkText}</span>
+          </button>
+        );
+      } else {
+        // Distinct EMERALD / GREEN pill for external official references
+        parts.push(
+          <a
+            key={`ext-link-${matchIndex}`}
+            href={normalizeUrl(href)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 mx-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-xs sm:text-[13px] shadow-2xs hover:shadow-xs hover:scale-102 transition-all align-baseline"
+            title={`Abrir referência externa: ${href}`}
+          >
+            <span>{linkText}</span>
+            <ExternalLink className="w-3 h-3 text-emerald-600 inline ml-0.5 shrink-0" />
+          </a>
+        );
+      }
 
       lastIndex = linkRegex.lastIndex;
     }
 
     if (lastIndex < cleanText.length) {
-      parts.push(cleanText.substring(lastIndex));
+      parts.push(formatTextTokens(cleanText.substring(lastIndex)));
     }
 
-    const content = parts.length > 0 ? parts : cleanText;
+    const content = parts.length > 0 ? parts : formatTextTokens(cleanText);
 
+    // Render H2 Subtitle
+    if (isH2) {
+      return (
+        <div className="pt-5 pb-2">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
+            <span>{content}</span>
+          </h2>
+        </div>
+      );
+    }
+
+    // Render H3 Subtitle
+    if (isH3) {
+      return (
+        <div className="pt-3 pb-1">
+          <h3 className="text-base sm:text-lg font-extrabold text-slate-800 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span>{content}</span>
+          </h3>
+        </div>
+      );
+    }
+
+    // Render Tip Callout Box
+    if (isTip) {
+      return (
+        <div className="my-4 p-4 rounded-2xl bg-amber-50/90 border-2 border-amber-300 text-amber-950 flex items-start gap-3 shadow-xs">
+          <span className="text-xl shrink-0 leading-none mt-0.5">💡</span>
+          <div className="space-y-1 text-xs sm:text-sm">
+            <span className="font-black text-amber-900 uppercase tracking-wide text-[10px] block">
+              Dica Prática do Especialista
+            </span>
+            <div className="leading-relaxed font-medium">{content}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render Alert Box
+    if (isAlert) {
+      return (
+        <div className="my-4 p-4 rounded-2xl bg-rose-50/90 border-2 border-rose-300 text-rose-950 flex items-start gap-3 shadow-xs">
+          <span className="text-xl shrink-0 leading-none mt-0.5">⚠️</span>
+          <div className="space-y-1 text-xs sm:text-sm">
+            <span className="font-black text-rose-900 uppercase tracking-wide text-[10px] block">
+              Atenção & Conformidade Fiscal
+            </span>
+            <div className="leading-relaxed font-medium">{content}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render Info Box
+    if (isInfo) {
+      return (
+        <div className="my-4 p-4 rounded-2xl bg-slate-100/90 border-l-4 border-blue-600 text-slate-800 flex items-start gap-3">
+          <span className="text-xl shrink-0 leading-none mt-0.5">ℹ️</span>
+          <div className="leading-relaxed text-xs sm:text-sm">{content}</div>
+        </div>
+      );
+    }
+
+    // Render Bullet List Item
     if (isBullet) {
       return (
         <div className="flex items-start gap-2.5 my-2 pl-2">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-2 shrink-0" />
-          <span className="leading-relaxed text-slate-700">{content}</span>
+          <span className="leading-relaxed text-slate-700 text-xs sm:text-sm">{content}</span>
         </div>
       );
     }
@@ -539,7 +843,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
       );
     }
 
-    return <p className="leading-relaxed text-slate-700 my-2">{content}</p>;
+    return <p className="leading-relaxed text-slate-700 text-xs sm:text-sm my-2.5">{content}</p>;
   };
 
   // Dedicated Category Knowledge Hub Showcase Component
@@ -685,43 +989,75 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* If an article is selected, display Enhanced Article Reader */}
+      {/* If an article is selected, display Enhanced Article Reader or In-Page Editor */}
       {activeArticle ? (
-        <article className="space-y-6 animate-in fade-in duration-200">
-          {/* Back Navigation Bar & Share Actions */}
-          <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <button
-              type="button"
-              onClick={() => setActiveArticleId(null)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold transition-colors cursor-pointer active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>
-                {lang === 'pt'
-                  ? '← Voltar à Página Principal do Blog'
-                  : lang === 'en'
-                  ? '← Back to Blog Home'
-                  : '← Retour à l’accueil du blog'}
-              </span>
-            </button>
+        isEditingInPage ? (
+          <BlogArticleInPageEditor
+            article={activeArticle}
+            lang={lang}
+            onSave={handleSaveInPageArticle}
+            onCancel={() => setIsEditingInPage(false)}
+            onSelectTool={onSelectTool}
+            onToggleViewMode={() => setIsEditingInPage(false)}
+          />
+        ) : (
+          <article className="space-y-6 animate-in fade-in duration-200">
+            {/* Back Navigation Bar & Share Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveArticleId(null);
+                    setIsEditingInPage(false);
+                  }}
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold transition-colors cursor-pointer active:scale-95"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>
+                    {lang === 'pt'
+                      ? '← Voltar à Página Principal do Blog'
+                      : lang === 'en'
+                      ? '← Back to Blog Home'
+                      : '← Retour à l’accueil du blog'}
+                  </span>
+                </button>
 
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-600" />
-                <span>{activeArticle.readTime}</span>
-              </span>
+                {activeArticle.published === false && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                    🟡 Rascunho (Privado)
+                  </span>
+                )}
+              </div>
 
-              <button
-                type="button"
-                onClick={handleCopyArticleLink}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-all cursor-pointer"
-                title="Copiar link do artigo"
-              >
-                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedLink ? (lang === 'pt' ? 'Copiado!' : 'Copié !') : (lang === 'pt' ? 'Compartilhar' : 'Partager')}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {/* In-Page Edit Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsEditingInPage(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                  title="Editar todo o artigo diretamente nesta página"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{lang === 'pt' ? '✏️ Editar na Página' : lang === 'en' ? '✏️ Edit on Page' : '✏️ Modifier la page'}</span>
+                </button>
+
+                <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 px-2">
+                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{activeArticle.readTime}</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleCopyArticleLink}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition-all cursor-pointer"
+                  title="Copiar link do artigo"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? (lang === 'pt' ? 'Copiado!' : 'Copié !') : (lang === 'pt' ? 'Compartilhar' : 'Partager')}</span>
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Article Header & Visual Cover Art */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
@@ -734,11 +1070,11 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 {categories.find((c) => c.id === activeArticle.category)?.label || 'Guia'}
               </span>
               <span className="text-xs text-slate-400">•</span>
-              <span className="text-xs text-slate-500 font-semibold">{activeArticle.date}</span>
+              <span className="text-xs text-slate-500 font-semibold">{activeArticle.date || 'Édition 2026'}</span>
               <span className="text-xs text-slate-400">•</span>
               <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Revisão Contábil 2026</span>
+                <span>{activeArticle.auditBadge?.[lang] || activeArticle.auditBadge?.pt || 'Revisão Contábil 2026'}</span>
               </span>
             </div>
 
@@ -775,11 +1111,11 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block leading-tight">Funil de Intenção</span>
                   <span className="font-bold text-slate-800 text-[11px] sm:text-xs">
-                    {activeArticle.funnelStage === 'fundo'
+                    {activeArticle.funnelStageLabel?.[lang] || activeArticle.funnelStageLabel?.pt || (activeArticle.funnelStage === 'fundo'
                       ? 'Fundo de Funil (Ação & Conversão)'
                       : activeArticle.funnelStage === 'meio'
                       ? 'Meio de Funil (Consideração Técnica)'
-                      : 'Topo de Funil (Educação & Atração)'}
+                      : 'Topo de Funil (Educação & Atração)')}
                   </span>
                 </div>
               </div>
@@ -789,20 +1125,22 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
             <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
-                  JP
+                  {activeArticle.author?.initials || 'JP'}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-slate-900">Jean-Philippe Beaulieu, CPA auditeur</span>
+                    <span className="font-extrabold text-slate-900">
+                      {activeArticle.author?.name || 'Jean-Philippe Beaulieu, CPA auditeur'}
+                    </span>
                     <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                   </div>
                   <span className="text-[11px] text-slate-500 block">
-                    Pôle d’Expertise Comptable & Fiscale PaieNet.qc · Membre de l’Ordre des CPA
+                    {activeArticle.author?.role || 'Pôle d’Expertise Comptable & Fiscale PaieNet.qc · Membre de l’Ordre des CPA'}
                   </span>
                 </div>
               </div>
               <div className="text-[11px] text-slate-500 sm:text-right font-medium">
-                Conforme aux barèmes ARC & Revenu Québec 2026
+                {activeArticle.author?.complianceSeal || 'Conforme aux barèmes ARC & Revenu Québec 2026'}
               </div>
             </div>
 
@@ -825,22 +1163,26 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                   {lang === 'pt' ? '📋 Destaques Práticos & O Que Você Vai Aprender:' : '📋 Points Clés & Synthèse Pratique :'}
                 </span>
               </div>
-              <ul className="text-xs sm:text-sm text-slate-800 space-y-1.5 list-disc list-inside">
-                <li>
-                  {lang === 'pt'
-                    ? 'Aplicação exata das retenções no holerite (RRQ, RQAP, Seguro-Desemprego AE e Impostos).'
-                    : 'Application exacte des déductions sur le talon de paie (RRQ, RQAP, AE et impôts).'}
-                </li>
-                <li>
-                  {lang === 'pt'
-                    ? 'Como não perder o desconto federal de 16,5% exclusivo para residentes tributários no Québec.'
-                    : 'Comment bénéficier de l’abattement fédéral de 16,5 % propre aux résidents du Québec.'}
-                </li>
-                <li>
-                  {lang === 'pt'
-                    ? 'Soluções e ferramentas práticas no portal para simular seu caso sem erros de contabilidade.'
-                    : 'Solutions et simulateurs gratuits disponibles sur le portail pour calculer vos droits.'}
-                </li>
+              <ul className="text-xs sm:text-sm text-slate-800 space-y-2 list-none pl-0">
+                {(
+                  activeArticle.keyTakeaways?.[lang] ||
+                  activeArticle.keyTakeaways?.pt || [
+                    lang === 'pt'
+                      ? 'Aplicação exata das retenções no holerite (RRQ, RQAP, Seguro-Desemprego AE e Impostos).'
+                      : 'Application exacte des déductions sur le talon de paie (RRQ, RQAP, AE et impôts).',
+                    lang === 'pt'
+                      ? 'Como não perder o desconto federal de 16,5% exclusivo para residentes tributários no Québec.'
+                      : 'Comment bénéficier de l’abattement fédéral de 16,5 % propre aux résidents du Québec.',
+                    lang === 'pt'
+                      ? 'Soluções e ferramentas práticas no portal para simular seu caso sem erros de contabilidade.'
+                      : 'Solutions et simulateurs gratuits disponibles sur le portail pour calculer vos droits.',
+                  ]
+                ).map((takeaway, tIdx) => (
+                  <li key={tIdx} className="flex items-start gap-2.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <span className="leading-relaxed font-medium">{renderParagraphWithLinks(takeaway)}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -857,7 +1199,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
             <div className="my-6 space-y-2">
               <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs relative aspect-[16/9] max-h-80 bg-slate-100">
                 <img
-                  src={`https://picsum.photos/seed/${activeArticle.id}-detail/1000/500`}
+                  src={activeArticle.detailImageUrl || `https://picsum.photos/seed/${activeArticle.id}-detail/1000/500`}
                   alt={`Ilustração prática: ${activeArticle.title[lang] || activeArticle.title.pt}`}
                   className="w-full h-full object-cover"
                   loading="lazy"
@@ -866,7 +1208,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 <div className="absolute bottom-3 left-3 right-3 text-white text-xs flex items-center justify-between">
                   <span className="font-semibold flex items-center gap-1">
                     <Info className="w-3.5 h-3.5 text-blue-300" />
-                    <span>Dossiê Visual & Análise Técnica do Mercado de Trabalho</span>
+                    <span>{activeArticle.imageCaption?.[lang] || activeArticle.imageCaption?.pt || 'Dossiê Visual & Análise Técnica do Mercado de Trabalho'}</span>
                   </span>
                   <span className="text-[10px] text-slate-300">Fonte: PaieNet.qc Research 2026</span>
                 </div>
@@ -875,6 +1217,77 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 Gráfico ilustrativo de procedimentos e conformidade fiscal segundo os barèmes oficiais de Revenu Québec e ARC.
               </p>
             </div>
+
+            {/* CONSOLIDATED LINKS & RESOURCES SECTION (AUTOMATIC SCAN OF POST LINKS) */}
+            {extractedLinks.length > 0 && (
+              <div className="my-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/50 to-slate-50 border border-blue-200/90 shadow-2xs space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-200/60 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                      <LinkIcon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                        {lang === 'pt'
+                          ? '🔗 Recursos & Links Mencionados Neste Artigo'
+                          : lang === 'en'
+                          ? '🔗 Links & Resources Mentioned in this Post'
+                          : '🔗 Liens & Ressources Mentionnés dans cet Article'}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        {lang === 'pt'
+                          ? 'Todos os simuladores internos e fontes externas citados no texto para acesso rápido'
+                          : 'Accès direct aux simulateurs et références cités dans ce guide'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full self-start sm:self-auto border border-blue-200">
+                    {extractedLinks.length} {lang === 'pt' ? 'links mapeados' : 'ressources'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {extractedLinks.map((linkItem, lIdx) => (
+                    <div
+                      key={lIdx}
+                      className="p-3 rounded-xl bg-white border border-slate-200 hover:border-blue-400 transition-all flex items-center justify-between gap-3 shadow-2xs group"
+                    >
+                      <div className="space-y-0.5 truncate">
+                        <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+                          {linkItem.isInternalTool ? '⚡ Ferramenta do Portal' : '🌐 Referência Externa'}
+                        </span>
+                        <span className="text-xs font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate block">
+                          {linkItem.text}
+                        </span>
+                      </div>
+
+                      {linkItem.isInternalTool && linkItem.toolId ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onSelectTool(linkItem.toolId!);
+                            window.scrollTo({ top: 100, behavior: 'smooth' });
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shrink-0 transition-colors cursor-pointer"
+                        >
+                          {lang === 'pt' ? 'Abrir' : 'Ouvrir'}
+                        </button>
+                      ) : (
+                        <a
+                          href={normalizeUrl(linkItem.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-[11px] font-bold shrink-0 transition-colors flex items-center gap-1"
+                        >
+                          <span>{lang === 'pt' ? 'Acessar' : 'Visiter'}</span>
+                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Official Table Data Rendering */}
             {activeArticle.tableData && (
@@ -1051,7 +1464,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 <div className="flex items-center gap-2">
                   <Calculator className="w-4 h-4 text-blue-400" />
                   <span className="font-extrabold text-xs sm:text-sm">
-                    {lang === 'pt' ? '⚡ Ferramentas Oficiais Recomendadas no PaieNet:' : '⚡ Outils Officiels Recommandés :'}
+                    {activeArticle.toolsStripTitle?.[lang] || activeArticle.toolsStripTitle?.pt || (lang === 'pt' ? '⚡ Ferramentas Oficiais Recomendadas no PaieNet:' : '⚡ Outils Officiels Recommandés :')}
                   </span>
                 </div>
                 <span className="text-[10px] font-bold text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded">
@@ -1060,53 +1473,28 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectTool('net-calc');
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 transition-colors text-left group cursor-pointer"
-                >
-                  <span className="font-bold block text-white group-hover:text-white">Salário Líquido</span>
-                  <span className="text-[10px] text-slate-400 group-hover:text-blue-100">Cálculo oficial</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectTool('overtime');
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-amber-600 transition-colors text-left group cursor-pointer"
-                >
-                  <span className="font-bold block text-white group-hover:text-white">Horas Extras</span>
-                  <span className="text-[10px] text-slate-400 group-hover:text-amber-100">1.5× CNESST</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectTool('canada-provinces');
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-indigo-600 transition-colors text-left group cursor-pointer"
-                >
-                  <span className="font-bold block text-white group-hover:text-white">13 Províncias</span>
-                  <span className="text-[10px] text-slate-400 group-hover:text-indigo-100">Comparativo</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectTool('resume-builder');
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 transition-colors text-left group cursor-pointer"
-                >
-                  <span className="font-bold block text-white group-hover:text-white">Gerador de CV</span>
-                  <span className="text-[10px] text-slate-400 group-hover:text-emerald-100">ATS Canadá</span>
-                </button>
+                {(activeArticle.recommendedTools && activeArticle.recommendedTools.length > 0
+                  ? activeArticle.recommendedTools
+                  : [
+                      { toolId: 'net-calc' as ToolId, title: 'Salário Líquido', subtitle: 'Cálculo oficial' },
+                      { toolId: 'overtime' as ToolId, title: 'Horas Extras', subtitle: '1.5× CNESST' },
+                      { toolId: 'canada-provinces' as ToolId, title: '13 Províncias', subtitle: 'Comparativo' },
+                      { toolId: 'resume-builder' as ToolId, title: 'Gerador de CV', subtitle: 'ATS Canadá' },
+                    ]
+                ).map((toolItem, tIdx) => (
+                  <button
+                    key={tIdx}
+                    type="button"
+                    onClick={() => {
+                      onSelectTool(toolItem.toolId);
+                      window.scrollTo({ top: 100, behavior: 'smooth' });
+                    }}
+                    className="p-2.5 rounded-xl bg-slate-800 hover:bg-blue-600 transition-colors text-left group cursor-pointer"
+                  >
+                    <span className="font-bold block text-white group-hover:text-white">{toolItem.title}</span>
+                    <span className="text-[10px] text-slate-400 group-hover:text-blue-100">{toolItem.subtitle}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1117,15 +1505,15 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                   <span className="text-[11px] font-extrabold text-blue-700 uppercase tracking-wider block flex items-center gap-1.5 justify-center sm:justify-start">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>
-                      {lang === 'pt'
+                      {activeArticle.ctaHeadline?.[lang] || activeArticle.ctaHeadline?.pt || (lang === 'pt'
                         ? '⚡ Ferramenta Prática Recomendada para este Caso:'
                         : lang === 'en'
                         ? '⚡ Recommended Practical Tool for this Need:'
-                        : '⚡ Outil pratique recommandé pour ce sujet :'}
+                        : '⚡ Outil pratique recommandé pour ce sujet :')}
                     </span>
                   </span>
                   <h4 className="text-sm sm:text-base font-bold text-slate-900">
-                    {activeArticle.ctaToolLabel[lang] || activeArticle.ctaToolLabel.pt}
+                    {activeArticle.ctaToolLabel?.[lang] || activeArticle.ctaToolLabel?.pt || 'Ver na Calculadora'}
                   </h4>
                 </div>
 
@@ -1138,11 +1526,11 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                   className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition-all cursor-pointer flex items-center gap-2 shrink-0 active:scale-95"
                 >
                   <span>
-                    {lang === 'pt'
+                    {activeArticle.ctaButtonText?.[lang] || activeArticle.ctaButtonText?.pt || (lang === 'pt'
                       ? 'Abrir Ferramenta Grátis'
                       : lang === 'en'
                       ? 'Open Free Tool'
-                      : 'Lancer l’outil gratuit'}
+                      : 'Lancer l’outil gratuit')}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -1323,6 +1711,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
             <NewsletterBox lang={lang} variant="card" />
           </div>
         </article>
+        )
       ) : (
         /* ============================================================== */
         /* REDESIGNED BLOG PORTAL SHOWCASE VIEW                           */
@@ -1359,18 +1748,30 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 </div>
               </div>
 
-              {/* Direct E-book Banner Action */}
-              <button
-                type="button"
-                onClick={onOpenEbookModal}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0 self-start md:self-center"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>{lang === 'pt' ? 'E-book Oficial (140p)' : lang === 'en' ? 'Official Guide (140p)' : 'Guide E-book (140p)'}</span>
-                <span className="px-1.5 py-0.5 bg-slate-950 text-amber-300 text-[10px] rounded font-bold">
-                  $9.99 CAD
-                </span>
-              </button>
+              {/* Actions: Write In-Page Article & E-book Guide */}
+              <div className="flex items-center gap-2 flex-wrap self-start md:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={handleCreateNewArticleInBlog}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs sm:text-sm shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                  title="Criar novo artigo e editar direto na página"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>{lang === 'pt' ? '➕ Escrever Artigo' : lang === 'en' ? '➕ Write Article' : '➕ Rédiger un Article'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenEbookModal}
+                  className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>{lang === 'pt' ? 'E-book Oficial' : lang === 'en' ? 'Official Guide' : 'Guide E-book'}</span>
+                  <span className="px-1.5 py-0.5 bg-slate-950 text-amber-300 text-[10px] rounded font-bold">
+                    $9.99 CAD
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Quick Live Barème Strip */}
@@ -1395,7 +1796,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
             {/* Redesigned Search and Filter Controls */}
             <div className="pt-3 border-t border-slate-100 space-y-3">
-              {/* Search Bar with Counter */}
+              {/* Search Bar with Counter & Drafts Filter */}
               <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
                 <div className="relative w-full sm:max-w-lg">
                   <input
@@ -1423,9 +1824,31 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                   )}
                 </div>
 
-                <div className="text-xs font-bold text-slate-500 self-end sm:self-center flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{filteredArticles.length} {lang === 'pt' ? 'artigos catalogados' : lang === 'en' ? 'articles' : 'articles'}</span>
+                <div className="flex items-center gap-2.5 self-end sm:self-center flex-wrap">
+                  {draftsCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDrafts(!showDrafts)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        showDrafts
+                          ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-2xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                      title={showDrafts ? 'Ocultar artigos marcados como rascunho' : 'Mostrar artigos em rascunho'}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span>
+                        {showDrafts
+                          ? (lang === 'pt' ? `Rascunhos (${draftsCount})` : `Brouillons (${draftsCount})`)
+                          : (lang === 'pt' ? `Ver Rascunhos (${draftsCount})` : `Voir Brouillons (${draftsCount})`)}
+                      </span>
+                    </button>
+                  )}
+
+                  <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                    <span>{filteredArticles.length} {lang === 'pt' ? 'artigos' : 'articles'}</span>
+                  </div>
                 </div>
               </div>
 

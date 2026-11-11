@@ -680,6 +680,7 @@ Calculado no PaieNet Québec (Barèmes 2025/2026)`;
                 lang={lang}
                 isPro={isPro}
                 onOpenProModal={handleOpenProModal}
+                onNavigateToTests={() => handleSelectTool('tech-tests')}
               />
             </motion.div>
           )}
@@ -697,6 +698,8 @@ Calculado no PaieNet Québec (Barèmes 2025/2026)`;
                 lang={lang}
                 isPro={isPro}
                 onOpenProModal={handleOpenProModal}
+                onNavigateToInterview={() => handleSelectTool('interview-simulator')}
+                onSelectTool={handleSelectTool}
               />
             </motion.div>
           )}

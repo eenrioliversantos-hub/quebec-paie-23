@@ -2023,11 +2023,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBackToPortal, onNaviga
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 font-sans">
                     {articles
-                      .filter((a) =>
-                        a.title.pt.toLowerCase().includes(articleSearch.toLowerCase()) ||
-                        a.category.toLowerCase().includes(articleSearch.toLowerCase()) ||
-                        (a.targetKeyword && a.targetKeyword.toLowerCase().includes(articleSearch.toLowerCase()))
-                      )
+                      .filter((a) => {
+                        const term = articleSearch.toLowerCase();
+                        const title = (a.title?.pt || a.title?.fr || a.title?.en || '').toLowerCase();
+                        const category = (a.category || '').toLowerCase();
+                        const keyword = (a.targetKeyword || '').toLowerCase();
+                        return title.includes(term) || category.includes(term) || keyword.includes(term);
+                      })
                       .map((article) => {
                         const isExpanded = expandedArticleId === article.id;
                         const intentLabel =

@@ -10,13 +10,20 @@ function getAIClient() {
   return new GoogleGenAI({ apiKey });
 }
 
-function fallbackOptimize(resumeData: any, companyName: string, jobTitle: string, targetLanguage: string) {
+function fallbackOptimize(
+  resumeData: any,
+  companyName: string,
+  jobTitle: string,
+  targetLanguage: string
+) {
   const isEn = targetLanguage === 'en';
   const targetCo = companyName || (isEn ? 'Quebec Manufacturing Partner' : 'Entreprise manufacturière du Québec');
   const targetRole = jobTitle || (isEn ? 'Production & Packaging Assembler' : 'Journalier de production / Opérateur d’emballage');
+  const candidateName = resumeData?.fullName || (isEn ? 'Candidate Profile' : 'Candidat Qualifié');
 
   return {
-    atsScore: 94,
+    atsScore: 72,
+    projectedScoreAfterOptimization: 95,
     matchingKeywords: [
       '5S & KAIZEN',
       'Bonnes Pratiques de Fabrication (BPF / GMP)',
@@ -29,36 +36,39 @@ function fallbackOptimize(resumeData: any, companyName: string, jobTitle: string
       'SIMDUT 2015',
       'Cadenassage (LOTO)',
       'Cadence continue (120 u/min)',
+      'Traçabilité des lots et codes-barres',
+      'Normes CNESST en milieu manufacturier',
     ],
     keyStrengths: [
-      'Plus de 10 ans d’expérience sur les lignes manufacturières à haute cadence (automobile et cosmétique)',
-      'Double formation technique de 720 heures au SENAI en contrôle qualité et lecture de plans',
+      'Plus de 8 ans d’expérience solide sur des lignes manufacturières à cadence élevée',
+      'Formation technique reconnue en contrôle de qualité et lecture de plans',
       'Maîtrise approfondie des méthodes d’amélioration continue 5S, TPM et Kaizen',
-      'Excellente condition physique, ponctualité et disponibilité pour les horaires postés (jour/soir/nuit)',
+      'Excellente condition physique, ponctualité exemplaire et grande disponibilité horaire (jour/soir/nuit)',
     ],
     strategicAdvice: [
-      'Mettre de l’avant l’expérience de palettisation et d’approvisionnement continu pour rassurer le chef d’équipe dès les premières lignes.',
-      'Valoriser la formation SENAI en qualité comme un atout direct pour éviter les rebuts et réduire le temps d’arrêt de chaîne.',
-      'Souligner la motivation à s’intégrer dans la culture québécoise et à perfectionner le français en milieu de travail.',
+      'Mettre de l’avant l’expérience de palettisation et d’approvisionnement continu dès les premières lignes pour rassurer le superviseur.',
+      'Valoriser la formation technique en qualité comme un atout direct pour éviter les rebuts et réduire le temps d’arrêt de ligne.',
+      'Souligner la motivation à s’intégrer dans la culture de travail québécoise et à perfectionner le français professionnel.',
     ],
     tailoredSummary: isEn
-      ? `Dedicated and safety-driven Production & Packaging Assembler with 10+ years of solid experience in high-throughput manufacturing lines. Trained at SENAI in quality control and technical blueprints. Proven proficiency in 5S, Kaizen, GMP, and rapid line replenishment. Eager to contribute punctuality and operational rigor to ${targetCo}.`
-      : `Journalier et opérateur de production industrielle hautement rigoureux cumulant plus de 10 années de pratique continue sur des lignes de conditionnement et d’assemblage à haute cadence. Diplômé du SENAI en inspection de la qualité et lecture de plans techniques (720h). Maîtrise éprouvée des méthodologies 5S, TPM, Kaizen et des Bonnes Pratiques de Fabrication (BPF). Déterminé à mettre son endurance, sa ponctualité exemplaire et son respect strict des normes de sécurité au service des opérations de ${targetCo}.`,
+      ? `Dedicated and safety-driven ${targetRole} with proven experience in fast-paced manufacturing and packaging lines. Solid track record in 5S, Kaizen, GMP, and rapid line replenishment. Eager to contribute punctuality, endurance, and operational rigor to the operations of ${targetCo}.`
+      : `Professionnel rigoureux et engagé cumulant plusieurs années de pratique continue sur des lignes de conditionnement, d’assemblage et de production à haute cadence. Formé aux méthodes 5S, TPM, Kaizen et aux Bonnes Pratiques de Fabrication (BPF). Déterminé à mettre son endurance, sa ponctualité exemplaire et son respect strict des normes CNESST et SST au service des opérations de ${targetCo} à titre de ${targetRole}.`,
     recommendedTechnicalSkills: [
       'Alimentation continue et approvisionnement des lignes de conditionnement',
-      'Assemblage mécanique et conditionnement à haute cadence',
+      'Assemblage mécanique et emballage à haute cadence',
       'Palettisation, cerclage, filmage et gerbage sécuritaire',
-      'Contrôle qualité visuel et dimensionnel (pied à coulisse, micromètre)',
+      'Contrôle qualité visuel et dimensionnel (tolérances)',
       'Gestion des flux de matières et respect des Bonnes Pratiques de Fabrication (BPF)',
+      'Application rigoureuse des normes SIMDUT 2015 et cadenassage LOTO',
     ],
     tailoredHighlightsByExpId: {
-      'exp-henrique-1': [
+      'exp-1': [
         'Assurer le réapprovisionnement méthodique, le gerbage et le facing rigoureux des allées d’outillages et matériaux.',
         'Contrôler l’exactitude de la tarification et de l’étiquetage code-barres pour prévenir toute rupture de stock.',
         'Gérer le comptoir technique de location et tester le fonctionnement sécuritaire des équipements avant remise aux clients.',
         'Appliquer les standards 5S pour maintenir une zone de stockage propre et sans danger d’accident.',
       ],
-      'exp-henrique-2': [
+      'exp-2': [
         'Alimenter sans interruption les lignes automatisées en composants, étiquettes et matières premières.',
         'Réaliser l’assemblage, la mise en étuis, le pesage et l’encaissage selon les cadences de production exigées.',
         'Assurer la palettisation soignée, le filmage étirable et l’étiquetage logistique selon les fiches d’expédition.',
@@ -67,21 +77,21 @@ function fallbackOptimize(resumeData: any, companyName: string, jobTitle: string
     },
     tailoredCoverLetter: {
       recipientName: 'Direction des Ressources Humaines & Recrutement',
-      recipientTitle: 'Responsable du Recrutement Industriel',
+      recipientTitle: 'Responsable du Recrutement',
       companyName: targetCo,
       companyAddress: 'Québec, Canada',
-      jobReference: 'QC-PROD-2026',
+      jobReference: 'QC-RECRUIT-2026',
       salutation: 'Madame, Monsieur,',
       openingParagraph: isEn
-        ? `With over 10 years of hands-on experience in manufacturing, assembly, and high-speed packaging lines, I am writing to express my strong enthusiasm for the ${targetRole} position at ${targetCo}.`
-        : `Fort de plus de 10 années d’expérience sur les lignes de production manufacturières, d’assemblage et de conditionnement industriel, c’est avec enthousiasme et détermination que je vous transmets ma candidature pour le poste de ${targetRole} au sein de ${targetCo}.`,
+        ? `With a solid background in manufacturing operations, packaging, and high-speed line assembly, I am writing to express my enthusiastic interest in the ${targetRole} position at ${targetCo}.`
+        : `Fort d'un parcours rigoureux sur les lignes de production manufacturières, d’assemblage et de conditionnement industriel, c’est avec grand intérêt et enthousiasme que je vous transmets ma candidature pour le poste de ${targetRole} au sein de ${targetCo}.`,
       bodyParagraphs: [
-        `Au cours de mon parcours chez Avon Industrial et Chris Cintos de Segurança, j’ai développé une maîtrise rigoureuse de l’approvisionnement en continu des chaînes, du conditionnement à cadence soutenue et de la palettisation conforme. Ma double formation de 720 heures au SENAI en inspection de la qualité et lecture de plans techniques me confère une vigilance constante quant aux tolérances et au respect des Bonnes Pratiques de Fabrication (BPF).`,
-        `Familiarisé avec les démarches 5S, TPM et Kaizen, je place la sécurité au travail (SST), la propreté des postes et la ponctualité au cœur de mon éthique. Disponible pour travailler selon des quarts rotatifs (jour, soir, nuit) et doté d’une excellente endurance physique, je serais honoré d’intégrer vos équipes de production.`,
+        `Au cours de mes mandats en environnement de cadence soutenue, j’ai développé une maîtrise complète de l’approvisionnement en continu des chaînes de production, du contrôle qualité visuel et de la palettisation sécuritaire selon les standards logistiques québécois. Ma rigueur me permet de veiller au respect constant des Bonnes Pratiques de Fabrication (BPF) et des normes SST.`,
+        `Habitué aux démarches 5S, TPM et à la gestion préventive des anomalies, j’accorde une priorité absolue à la sécurité au travail (normes CNESST, SIMDUT 2015) et à l'esprit d'équipe. Disponible pour des horaires rotatifs et doté d’une excellente condition physique, je m'intégrerai rapidement à vos équipes opérationnelles.`,
       ],
       closingParagraph: isEn
-        ? `I welcome the opportunity to discuss my qualifications and how my background aligns with your team's operational goals in an interview.`
-        : `Je me tiens à votre entière disposition pour convenir d’une entrevue virtuelle afin d’échanger sur vos besoins opérationnels actuels.`,
+        ? `I welcome the opportunity to discuss how my hands-on background and dedication align with your production goals in an interview.`
+        : `Je serais ravi de vous rencontrer lors d’une entrevue afin d’échanger plus en détail sur la façon dont mes compétences pratiques et ma rigueur répondront à vos besoins opérationnels.`,
       signoff: isEn
         ? 'Sincerely,'
         : 'Veuillez agréer, Madame, Monsieur, l’expression de mes salutations distinguées.',
@@ -115,17 +125,17 @@ export async function POST(req: NextRequest) {
 
     const langInstruction =
       targetLanguage === 'en'
-        ? 'Output the tailored recommendations and texts in Canadian English.'
-        : 'Output the tailored recommendations and texts in professional Québec French.';
+        ? 'Output the tailored recommendations and texts strictly in professional Canadian English.'
+        : 'Output the tailored recommendations and texts strictly in professional Québec French.';
 
-    const prompt = `Tu es un recruteur senior et expert en optimisation ATS pour le marché de l'emploi au Québec et au Canada.
+    const prompt = `Tu es un recruteur senior et expert en optimisation ATS et filtres RH pour le marché de l'emploi au Québec et au Canada.
 Un candidat souhaite adapter et optimiser son CV et sa lettre de présentation pour postuler spécifiquement à cette offre d'emploi.
 
 ${langInstruction}
 
 OFFRE D'EMPLOI CIBLÉE :
-Entreprise : ${companyName || 'Non spécifiée'}
-Poste ciblé : ${jobTitle || 'Titre du poste'}
+Entreprise : ${companyName || 'Entreprise québécoise'}
+Poste ciblé : ${jobTitle || 'Poste visé'}
 Description de l'offre :
 """
 ${jobDescription.slice(0, 8000)}
@@ -137,43 +147,41 @@ ${JSON.stringify(resumeData, null, 2).slice(0, 8000)}
 """
 
 TON OBJECTIF :
-1. Calculer le score d'adéquation ATS actuel (de 0 à 100).
-2. Identifier les mots-clés présents et les mots-clés essentiels de l'offre qui manquent au CV.
-3. Analyser les points forts majeurs qui qualifient le candidat pour ce poste.
-4. Rédiger des conseils stratégiques pour contourner les points faibles ou le manque d'expérience directe (ex: valoriser les compétences transférables, l'expérience internationale, le bilinguismo, la volonté d'apprentissage selon les normes québécoises).
-5. Réécrire un "tailoredSummary" ultra-ciblé pour ce poste qui capte l'attention du recruteur en 6 secondes.
-6. Proposer une liste de compétences techniques prioritaires (recommendedTechnicalSkills) à mettre en avant pour correspondre à l'offre.
-7. Pour chaque expérience professionnelle du candidat, proposer une version optimisée des puces (tailoredHighlightsByExpId) mettant l'accent sur les réalisations répondant aux critères de l'offre.
-8. Rédiger une lettre de présentation (tailoredCoverLetter) percutante, personnalisée pour cette entreprise et ce poste précis.
+1. Calculer le score d'adéquation ATS actuel (atsScore: nombre entre 50 et 85).
+2. Calculer le score projeté après application des optimisations (projectedScoreAfterOptimization: nombre entre 90 et 98).
+3. Lister les mots-clés de l'offre déjà présents dans le profil du candidat (matchingKeywords: string[]).
+4. Lister les mots-clés essentiels et compétences obligatoires de l'offre qui manquent au CV et doivent être intégrés (missingKeywords: string[]).
+5. Identifier 3 à 5 atouts majeurs (keyStrengths: string[]) du candidat pour ce poste.
+6. Rédiger 3 à 4 conseils stratégiques pour l'entrevue ou pour valoriser l'expérience internationale (strategicAdvice: string[]).
+7. Réécrire un "tailoredSummary" percutant (4 à 5 lignes), anti-viés québécois, incorporant les termes clés de l'offre.
+8. Proposer 6 à 8 compétences techniques prioritaires (recommendedTechnicalSkills: string[]) pour ce poste.
+9. Rédiger une lettre de présentation complète et soignée (tailoredCoverLetter), formatée selon les standards corporatifs du Québec.
 
-Réponds STRICTEMENT avec un objet JSON valide (sans backticks markdown, sans texte additionnel) avec ce schéma exact :
+Réponds STRICTEMENT avec un objet JSON valide (sans texte additionnel, sans backticks markdown) respectant ce schéma exact :
 {
-  "matchScore": number (ex: 78),
-  "projectedScoreAfterOptimization": number (ex: 94),
-  "matchedKeywords": string[],
-  "missingKeywords": string[],
-  "strengthsAnalysis": string,
-  "weaknessesAdvice": string,
-  "tailoredSummary": string,
-  "recommendedTechnicalSkills": string[],
-  "tailoredHighlightsByExpId": {
-    [expId: string]: string[]
-  },
+  "atsScore": number,
+  "projectedScoreAfterOptimization": number,
+  "matchingKeywords": ["string"],
+  "missingKeywords": ["string"],
+  "keyStrengths": ["string"],
+  "strategicAdvice": ["string"],
+  "tailoredSummary": "string",
+  "recommendedTechnicalSkills": ["string"],
   "tailoredCoverLetter": {
-    "recipientName": string,
-    "recipientTitle": string,
-    "companyName": string,
-    "companyAddress": string,
-    "jobReference": string,
-    "salutation": string,
-    "openingParagraph": string,
-    "bodyParagraphs": string[],
-    "closingParagraph": string,
-    "signoff": string
+    "recipientName": "string",
+    "recipientTitle": "string",
+    "companyName": "string",
+    "companyAddress": "string",
+    "jobReference": "string",
+    "salutation": "string",
+    "openingParagraph": "string",
+    "bodyParagraphs": ["string"],
+    "closingParagraph": "string",
+    "signoff": "string"
   }
 }`;
 
-    let parsedData = null;
+    let parsedData: any = null;
     try {
       const aiClient = getAIClient();
       if (aiClient) {
@@ -193,11 +201,46 @@ Réponds STRICTEMENT avec un objet JSON valide (sans backticks markdown, sans te
       console.warn('Gemini call failed in optimize route, using fallback:', aiErr);
     }
 
-    if (!parsedData) {
-      parsedData = fallbackOptimize(resumeData, companyName, jobTitle, targetLanguage);
-    }
+    const fallback = fallbackOptimize(resumeData, companyName, jobTitle, targetLanguage);
 
-    return NextResponse.json({ success: true, data: parsedData });
+    // Normalisation défensive absolue pour garantir la compatibilité frontend
+    const finalData = {
+      atsScore: typeof parsedData?.atsScore === 'number'
+        ? parsedData.atsScore
+        : typeof parsedData?.matchScore === 'number'
+        ? parsedData.matchScore
+        : fallback.atsScore,
+      projectedScoreAfterOptimization: typeof parsedData?.projectedScoreAfterOptimization === 'number'
+        ? parsedData.projectedScoreAfterOptimization
+        : 95,
+      matchingKeywords: Array.isArray(parsedData?.matchingKeywords) && parsedData.matchingKeywords.length > 0
+        ? parsedData.matchingKeywords
+        : Array.isArray(parsedData?.matchedKeywords) && parsedData.matchedKeywords.length > 0
+        ? parsedData.matchedKeywords
+        : fallback.matchingKeywords,
+      missingKeywords: Array.isArray(parsedData?.missingKeywords) && parsedData.missingKeywords.length > 0
+        ? parsedData.missingKeywords
+        : fallback.missingKeywords,
+      keyStrengths: Array.isArray(parsedData?.keyStrengths) && parsedData.keyStrengths.length > 0
+        ? parsedData.keyStrengths
+        : typeof parsedData?.strengthsAnalysis === 'string'
+        ? parsedData.strengthsAnalysis.split('\n').filter(Boolean)
+        : fallback.keyStrengths,
+      strategicAdvice: Array.isArray(parsedData?.strategicAdvice) && parsedData.strategicAdvice.length > 0
+        ? parsedData.strategicAdvice
+        : typeof parsedData?.weaknessesAdvice === 'string'
+        ? parsedData.weaknessesAdvice.split('\n').filter(Boolean)
+        : fallback.strategicAdvice,
+      tailoredSummary: parsedData?.tailoredSummary || fallback.tailoredSummary,
+      recommendedTechnicalSkills: Array.isArray(parsedData?.recommendedTechnicalSkills) && parsedData.recommendedTechnicalSkills.length > 0
+        ? parsedData.recommendedTechnicalSkills
+        : fallback.recommendedTechnicalSkills,
+      tailoredCoverLetter: parsedData?.tailoredCoverLetter?.openingParagraph
+        ? parsedData.tailoredCoverLetter
+        : fallback.tailoredCoverLetter,
+    };
+
+    return NextResponse.json({ success: true, data: finalData });
   } catch (error: any) {
     console.error('Erreur API resume/optimize:', error);
     return NextResponse.json({

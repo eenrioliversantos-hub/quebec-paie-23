@@ -54,6 +54,19 @@ export interface StepByStepGuideItem {
   screenKicker?: string;
 }
 
+export interface AuthorInfo {
+  initials: string;
+  name: string;
+  role: string;
+  complianceSeal: string;
+}
+
+export interface RecommendedToolItem {
+  toolId: ToolId;
+  title: string;
+  subtitle: string;
+}
+
 export interface BlogArticleData {
   id: string;
   slug: string;
@@ -67,10 +80,17 @@ export interface BlogArticleData {
   content: Record<Language, string[]>;
   ctaTool?: ToolId;
   ctaToolLabel: Record<Language, string>;
+  ctaHeadline?: Record<Language, string>;
+  ctaButtonText?: Record<Language, string>;
+  toolsStripTitle?: Record<Language, string>;
+  recommendedTools?: RecommendedToolItem[];
+  author?: AuthorInfo;
+  auditBadge?: Record<Language, string>;
   searchIntent?: SearchIntent;
   targetKeyword?: string;
   searchVolumeLevel?: 'high' | 'medium' | 'niche';
   funnelStage?: 'topo' | 'meio' | 'fundo';
+  funnelStageLabel?: Record<Language, string>;
   targetAudienceType?: TargetAudienceType;
   targetAudienceLabel?: Record<Language, string>;
   communicationTone?: Record<Language, string>;
@@ -82,6 +102,8 @@ export interface BlogArticleData {
   stepByStepGuide?: StepByStepGuideItem[];
   featuredBadge?: Record<Language, string>;
   imageUrl?: string;
+  detailImageUrl?: string;
+  imageCaption?: Record<Language, string>;
   isHot?: boolean;
   isFeaturedHero?: boolean;
   keyTakeaways?: Record<Language, string[]>;
@@ -484,26 +506,94 @@ const INITIAL_ARTICLES: BlogArticleData[] = [
       fr: 'Pourquoi le Québec a-t-il deux déclarations de revenus distinctes et comment fonctionne l’abattement fédéral de 16,5 % sur votre paie ? Explications claires pour ne rien perdre.',
       en: 'Why does Quebec have separate provincial taxes and how does the 16.5% Quebec Abatement reduce your federal tax burden? Full mathematical breakdown.',
     },
-    content: {
+    author: {
+      name: 'Jean-Philippe Beaulieu, CPA auditeur',
+      role: 'Pôle d’Expertise Comptable & Fiscale PaieNet.qc · Membre de l’Ordre des CPA',
+      initials: 'JP',
+      complianceSeal: 'Conforme aux barèmes ARC & Revenu Québec 2026',
+    },
+    auditBadge: {
+      pt: 'Revisão Contábil 2026',
+      fr: 'Révision Comptable 2026',
+      en: '2026 Accounting Review',
+    },
+    toolsStripTitle: {
+      pt: '⚡ Ferramentas Oficiais Recomendadas no PaieNet:',
+      fr: '⚡ Outils Officiels Recommandés sur PaieNet :',
+      en: '⚡ Official Tools Recommended on PaieNet:',
+    },
+    recommendedTools: [
+      { toolId: 'net-calc', title: 'Salário Líquido', subtitle: 'Cálculo oficial' },
+      { toolId: 'overtime', title: 'Horas Extras', subtitle: '1.5× CNESST' },
+      { toolId: 'canada-provinces', title: '13 Províncias', subtitle: 'Comparativo' },
+      { toolId: 'resume-builder', title: 'Gerador de CV', subtitle: 'ATS Canadá' },
+    ],
+    ctaHeadline: {
+      pt: 'Verifique cada centavo do seu contracheque oficial do Québec',
+      fr: 'Vérifiez chaque centime de votre talon de paie officiel',
+      en: 'Audit every cent of your official Quebec paystub',
+    },
+    ctaButtonText: {
+      pt: 'Abrir Calculadora de Salário Líquido Grátis',
+      fr: 'Lancer le Calculateur de Salaire Net',
+      en: 'Launch Free Net Salary Calculator',
+    },
+    keyTakeaways: {
       pt: [
-        'Para todo trabalhador ou imigrante recém-chegado ao Québec, receber o primeiro contracheque (talon de paie) costuma trazer surpresas: a diferença entre o salário bruto contratado e o valor líquido depositado na conta é moldada por regimes públicos exclusivos da província.',
-        '1. O Regime de Aposentadoria do Québec (RRQ): Ao contrário das outras províncias canadenses que contribuem para o CPP (Canada Pension Plan), o Québec possui seu próprio fundo de pensão estatal. A alíquota combinada incide sobre os ganhos admissíveis acima da isenção básica de $3.500 CAD.',
-        '2. O Seguro Parental (RQAP): Financia as licenças de maternidade, paternidade e adoção com benefícios mais generosos que no restante do país. Em contrapartida, a alíquota de Seguro-Desemprego (Assurance-Emploi / AE) federal cobrada no Québec é menor do que nas outras províncias canadenses.',
-        '3. O Abatimento do Québec de 16,5%: Esta é a maior peculiaridade fiscal! Como o governo provincial do Québec financia diretamente seus próprios programas sociais, o governo federal do Canadá concede um desconto automático de 16,5% sobre o imposto federal devido.',
-        'Nossa calculadora PaieNet.qc reproduz essa fórmula com precisão matemática até o centavo, permitindo que você confira se o departamento de recursos humanos da sua empresa está aplicando as retenções corretas. Simule seus impostos e retenções detalhadas em segundos acessando o nosso [Calculador de Salário Líquido do Québec](#net-calc) ou compare o seu salário líquido com outras regiões usando o [Comparador de Salários Canadenses](#canada-provinces).',
+        'O holerite do Québec possui linhas separadas de imposto provincial (Revenu Québec) e federal (ARC).',
+        'O Abatimento de 16,5% concede desconto automático no imposto federal para residentes fiscais no Québec.',
+        'O RRQ e o RQAP são fundos públicos próprios que substituem os programas federais do resto do Canadá.',
+        'Calcule seu salário líquido completo no [Calculador de Salário Líquido do Québec](#net-calc).',
       ],
       fr: [
-        'Pour tout travailleur ou immigrant arrivant au Québec, recevoir son premier talon de paie peut être surprenant : l’écart entre le salaire brut négocié et le montant net déposé dans votre compte bancaire est influencé par plusieurs régimes publics propres à la province.',
-        '1. Le Régime de rentes du Québec (RRQ) : Contrairement aux autres provinces canadiennes qui cotisent au RPC (Régime de pensions du Canada), le Québec possède son propre fonds de retraite public. Le taux combiné s’applique sur les gains admissibles au-delà de l’exemption de base de 3 500 $.',
-        '2. Le Régime québécois d’assurance parentale (RQAP) : Ce régime finance les congés de maternité, de paternité et d’adoption avec des prestations généreuses. En échange, le taux d’assurance-emploi (AE) fédéral prélevé au Québec est réduit comparativement au reste du Canada.',
-        '3. L’Abattement du Québec de 16,5 % : Le gouvernement fédéral accorde au Québec un crédit automatique de 16,5 % sur l’impôt de base fédéral parce que le Québec finance lui-même plusieurs programmes sociaux.',
-        'Notre calculateur PaieNet intègre cette formule officielle avec exactitude mathématique pour vérifier chacune de vos paies. Calculez votre salaire net en quelques secondes sur le [Calculateur de Salaire Net Québec](#net-calc) ou comparez-le avec d\'autres régions sur le [Comparateur Provincial](#canada-provinces).',
+        'Le talon de paie québécois affiche deux lignes d’impôt séparées : Revenu Québec et ARC fédérale.',
+        'L’abattement de 16,5 % réduit automatiquement l’impôt fédéral de base pour les résidents du Québec.',
+        'Le RRQ et le RQAP sont des régimes québécois distincts qui remplacent les régimes fédéraux.',
+        'Calculez votre paie sur le [Calculateur de Salaire Net](#net-calc).',
       ],
       en: [
-        'For any worker or newcomer in Quebec, receiving your first paystub can be surprising: the gap between negotiated gross pay and net cash deposited is shaped by Quebec’s distinct social regimes.',
-        '1. Quebec Pension Plan (QPP/RRQ): Unlike the rest of Canada contributing to CPP, Quebec manages its own independent pension fund with combined base and enhanced contributions.',
-        '2. Quebec Parental Insurance Plan (QPIP/RQAP): Offers generous parental and maternity leaves. In return, the federal Employment Insurance (EI) premium rate is discounted for Quebec residents.',
-        '3. The 16.5% Quebec Abatement: A federal tax reduction given to Quebec workers because the province opted out of certain shared federal programs. PaieNet calculates this exact credit down to the cent.',
+        'Quebec paystubs list separate provincial and federal withholding lines.',
+        'The 16.5% abatement provides a direct reduction on federal baseline tax for Quebec tax residents.',
+        'QPP and QPIP are autonomous provincial funds unique to Quebec.',
+        'Run your calculations in our [Net Salary Calculator](#net-calc).',
+      ],
+    },
+    content: {
+      pt: [
+        'Para todo trabalhador ou imigrante recém-chegado ao Québec, receber o primeiro contracheque (**talon de paie**) costuma trazer surpresas: a diferença entre o salário bruto contratado e o valor líquido depositado na conta é moldada por regimes públicos exclusivos da província.',
+        '## 1. O Regime de Aposentadoria do Québec (RRQ)',
+        'Ao contrário das outras províncias canadenses que contribuem para o CPP (Canada Pension Plan), o Québec possui seu próprio fundo de pensão estatal (**Retraite Québec**).',
+        '• A alíquota combinada de **6,40%** incide sobre os ganhos admissíveis entre a isenção de $3.500 CAD e o primeiro teto MGA de $73.200 CAD.',
+        '• Para quem ganha acima de $73.200, há ainda a alíquota de **4,00%** no segundo teto MGS até $85.600 CAD.',
+        '> 💡 [DICA] Ao planejar sua aposentadoria no Canadá, considere o impacto conjunto do RRQ e do REER. Conheça as estratégias no [Simulador de Aposentadoria](#rrsp-savings).',
+        '## 2. O Seguro Parental do Québec (RQAP)',
+        'O **Régime québécois d’assurance parentale (RQAP)** financia as licenças de maternidade, paternidade e adoção com benefícios mais generosos que no restante do país (taxa de 0,494% até o teto de $98.000 CAD).',
+        '• Em contrapartida, a alíquota de **Seguro-Desemprego (AE)** federal cobrada no Québec é menor (**1,32%**) do que nas outras províncias canadenses (1,64%).',
+        '## 3. O Abatimento do Québec de 16,5% no Imposto Federal',
+        'Esta é a maior peculiaridade fiscal da província! Como o governo do Québec financia diretamente a saúde e programas sociais próprios, o governo federal do Canadá concede um **desconto automático de 16,5%** sobre o imposto federal devido.',
+        '> ⚠️ [ATENÇÃO FISCAL] O abatimento de 16,5% não é uma restituição opcional que você pede no fim do ano; ele já é abatido diretamente pelo seu empregador a cada folha de pagamento.',
+        'Você pode auditar cada dedução com exatidão matemática acessando o nosso [Calculador de Salário Líquido do Québec](#net-calc) ou comparar o seu salário com outras regiões usando o [Comparador de 13 Províncias](#canada-provinces).',
+        'Para consultar os formulários oficiais de retenção, acesse o portal de [Revenu Québec](https://www.revenuquebec.ca/fr/entreprises/retenues-a-la-source-et-cotisations-de-lemployeur/).',
+      ],
+      fr: [
+        'Pour tout travailleur au Québec, le talon de paie est façonné par des régimes fiscaux et sociaux autonomes.',
+        '## 1. Le Régime de rentes du Québec (RRQ)',
+        'Le Québec gère son propre régime de retraite avec un taux de 6,40 % jusqu’au MGA de 73 200 $ et 4,00 % sur la tranche supérieure.',
+        '## 2. Le RQAP et l’assurance-emploi',
+        'Le RQAP finance les congés parentaux et permet d’avoir un taux réduit d’assurance-emploi (1,32 %).',
+        '## 3. L’abattement du Québec de 16,5 %',
+        'Un crédit de 16,5 % appliqué directement sur l’impôt fédéral de base.',
+        'Testez votre salaire sur le [Calculateur de Salaire Net](#net-calc) et le [Comparateur Provincial](#canada-provinces).',
+      ],
+      en: [
+        'Understanding your Quebec paystub requires decoding the province’s autonomous social regimes.',
+        '## 1. Quebec Pension Plan (QPP/RRQ)',
+        'Autonomous public pension with two tier contributions (6.40% up to $73,200 and 4.00% up to $85,600).',
+        '## 2. QPIP Parental Insurance & Discounted EI',
+        'Generous maternity/paternity support paired with reduced federal EI rates.',
+        '## 3. The 16.5% Federal Quebec Abatement',
+        'Direct reduction on basic federal tax under section 120 of the Income Tax Act.',
+        'Audit your earnings with our [Net Salary Calculator](#net-calc) and [13 Provinces Comparator](#canada-provinces).',
       ],
     },
     ctaTool: 'net-calc',
@@ -2879,8 +2969,63 @@ class AdminStore {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ARTICLES);
       if (stored) {
-        this.cachedArticles = JSON.parse(stored);
-        return this.cachedArticles!;
+        const parsed: BlogArticleData[] = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Reconcile: backfill missing articles and enrich existing default articles with new rich fields
+          const existingMap = new Map(parsed.map((a) => [a.id, a]));
+          let modified = false;
+
+          for (const initArt of INITIAL_ARTICLES) {
+            const existing = existingMap.get(initArt.id);
+            if (!existing) {
+              parsed.push(initArt);
+              modified = true;
+            } else {
+              // Backfill rich fields if missing on stored copy
+              let artChanged = false;
+              if (!existing.author && initArt.author) {
+                existing.author = initArt.author;
+                artChanged = true;
+              }
+              if (!existing.auditBadge && initArt.auditBadge) {
+                existing.auditBadge = initArt.auditBadge;
+                artChanged = true;
+              }
+              if (!existing.toolsStripTitle && initArt.toolsStripTitle) {
+                existing.toolsStripTitle = initArt.toolsStripTitle;
+                artChanged = true;
+              }
+              if (!existing.recommendedTools && initArt.recommendedTools) {
+                existing.recommendedTools = initArt.recommendedTools;
+                artChanged = true;
+              }
+              if (!existing.ctaHeadline && initArt.ctaHeadline) {
+                existing.ctaHeadline = initArt.ctaHeadline;
+                artChanged = true;
+              }
+              if (!existing.ctaButtonText && initArt.ctaButtonText) {
+                existing.ctaButtonText = initArt.ctaButtonText;
+                artChanged = true;
+              }
+              if (!existing.keyTakeaways && initArt.keyTakeaways) {
+                existing.keyTakeaways = initArt.keyTakeaways;
+                artChanged = true;
+              }
+              if (artChanged) modified = true;
+            }
+          }
+
+          if (modified) {
+            try {
+              localStorage.setItem(STORAGE_KEYS.ARTICLES, JSON.stringify(parsed));
+            } catch {
+              // ignore
+            }
+          }
+
+          this.cachedArticles = parsed;
+          return this.cachedArticles;
+        }
       }
     } catch (e) {
       console.error('Error loading articles from storage:', e);
